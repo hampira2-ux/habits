@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Habits</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Habits">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f3f5f8">
+<style>
+:root{
+  --bg:#f3f5f8;--card:#fff;--text:#1d2433;--muted:#7a8497;--line:#e4e8ef;
+  --ok:#2fb58a;--ok-soft:#dff5ec;--accent:#e8607a;--ring:#f6d3db;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#12161d;--card:#1c222d;--text:#eef1f6;--muted:#94a0b4;--line:#2b3340;--ok:#4fd1a5;--ok-soft:#1f3a33;--accent:#f0788f;--ring:#4a2c36}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:Vazirmatn,Tahoma,"Segoe UI",system-ui,sans-serif;min-height:100vh}
+.wrap{max-width:520px;margin:0 auto;padding:16px 14px 90px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--muted);font-size:13px}
+.week{display:flex;gap:6px;justify-content:space-between;margin:10px 0 16px}
+.day{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;padding:4px 0;border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.day .n{width:38px;height:38px;border-radius:50%;border:2px solid var(--ring);display:grid;place-items:center;font-size:14px;color:var(--text);position:relative}
+.day.done .n{background:var(--ok);border-color:var(--ok);color:#fff}
+.day.part .n{border-color:var(--ok)}
+.day.sel{outline:2px solid var(--accent);outline-offset:2px}
+.bar{height:8px;background:var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .25s}
+.list{display:flex;flex-direction:column;gap:10px}
+.h{background:var(--card);border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;border:1px solid var(--line);user-select:none;-webkit-tap-highlight-color:transparent}
+.h .ic{font-size:24px;width:44px;height:44px;border-radius:12px;background:var(--ok-soft);display:grid;place-items:center;flex:none}
+.h .t{flex:1;min-width:0}
+.h .name{font-weight:600;font-size:16px;overflow-wrap:anywhere}
+.h .meta{font-size:12px;color:var(--muted);margin-top:2px}
+.chk{width:36px;height:36px;border-radius:50%;border:2px solid var(--ok);display:grid;place-items:center;color:transparent;flex:none;font-size:18px;transition:.15s}
+.h.on{opacity:.75}
+.h.on .name{text-decoration:line-through}
+.h.on .chk{background:var(--ok);color:#fff}
+.del{border:0;background:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 6px;display:none}
+body.edit .del{display:block}
+body.edit .h .ic{outline:2px dashed var(--accent);outline-offset:2px}
+.empty{text-align:center;color:var(--muted);padding:30px 0}
+.dock{position:fixed;inset:auto 0 0 0;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));display:flex;gap:10px;justify-content:center;background:linear-gradient(transparent,var(--bg) 40%)}
+.dock button{font:inherit;border:0;border-radius:26px;padding:12px 20px;cursor:pointer;font-size:15px}
+.add{background:var(--accent);color:#fff;font-weight:600}
+.ed{background:var(--card);color:var(--text);border:1px solid var(--line)!important}
+dialog{border:0;border-radius:20px;padding:18px;width:min(92vw,360px);background:var(--card);color:var(--text)}
+dialog::backdrop{background:#0008}
+dialog input{width:100%;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);margin:8px 0}
+.emojis{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.emojis button{font-size:20px;border:2px solid transparent;background:var(--bg);border-radius:10px;width:40px;height:40px;cursor:pointer}
+.emojis button.sel{border-color:var(--accent)}
+.row{display:flex;gap:8px;justify-content:flex-start}
+.row button{font:inherit;border:0;border-radius:12px;padding:9px 16px;cursor:pointer}
+.row .ok{background:var(--accent);color:#fff}.row .no{background:var(--bg);color:var(--text)}
+button:focus-visible,.h:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1 id="title">Today</h1><div class="sub" id="sub"></div></div>
+    <div class="sub" id="count"></div>
+  </header>
+  <div class="week" id="week"></div>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="list" id="list"></div>
+</div>
+
+<div class="dock">
+  <button class="add" id="addBtn">+ New habit</button>
+  <button class="ed" id="editBtn">Edit</button>
+</div>
+
+<dialog id="dlg">
+  <b id="dtitle">New habit</b>
+  <input id="nm" placeholder="Habit name, e.g. Workout" maxlength="60">
+  <div class="emojis" id="emo"></div>
+  <input id="ce" placeholder="Or paste any emoji here" maxlength="12">
+  <div class="row"><button class="ok" id="save">Save</button><button class="no" id="cancel">Cancel</button></div>
+</dialog>
+
+<script>
+const DEFAULTS=[
+ {id:1,name:"Stretch",ic:"🤸"},
+ {id:2,name:"Make the bed",ic:"🛏️"},
+ {id:3,name:"Brush teeth",ic:"🪥"},
+ {id:4,name:"English language",ic:"📖"},
+ {id:5,name:"Meditation",ic:"🧘"},
+ {id:6,name:"Read a book",ic:"📚"},
+ {id:7,name:"Daily and trade journal",ic:"📝"},
+ {id:8,name:"Learn to invest",ic:"📈"}
+];
+const EMO=["💪","🏃","💧","📖","🧘","💼","📈","🎧","✍️","🥗","😴","🧠","🎯","🧹","💊","📵","🤸","🛏️","🪥","📚","📝","☀️","🚶","🍎","💰","🎸","🙏","🚭","🧊","🌱"];
+let habits,log,sel=todayKey(),pickedEmo=EMO[0],editingId=null;
+
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function save(){try{localStorage.setItem("habits",JSON.stringify(habits));localStorage.setItem("log",JSON.stringify(log))}catch(e){}}
+habits=load("habits",DEFAULTS);log=load("log",{});
+
+function key(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function todayKey(){return key(new Date())}
+const fa=new Intl.NumberFormat("en-US");
+function doneSet(k){return log[k]||[]}
+
+function renderWeek(){
+  const w=document.getElementById("week");w.innerHTML="";
+  const now=new Date();
+  for(let i=6;i>=0;i--){
+    const d=new Date(now);d.setDate(now.getDate()-i);const k=key(d);
+    const done=doneSet(k).filter(id=>habits.some(h=>h.id===id)).length;
+    const b=document.createElement("button");
+    b.className="day"+(k===sel?" sel":"")+(habits.length&&done===habits.length?" done":done?" part":"");
+    b.innerHTML=`<span>${d.toLocaleDateString("en-US",{weekday:"short"})}</span><span class="n">${d.getDate()}</span>`;
+    b.onclick=()=>{sel=k;render()};
+    w.appendChild(b);
+  }
+}
+function renderList(){
+  const l=document.getElementById("list");l.innerHTML="";
+  const done=doneSet(sel);
+  if(!habits.length){l.innerHTML='<div class="empty">No habits yet. Tap “New habit” to start.</div>';return}
+  habits.forEach(h=>{
+    const on=done.includes(h.id);
+    const el=document.createElement("div");
+    el.className="h"+(on?" on":"");el.tabIndex=0;el.setAttribute("role","checkbox");el.setAttribute("aria-checked",on);
+    el.innerHTML=`<div class="ic">${h.ic}</div><div class="t"><div class="name"></div></div><button class="del" title="Delete">🗑️</button><div class="chk">✓</div>`;
+    el.querySelector(".name").textContent=h.name;
+    const toggle=()=>{
+      const s=new Set(log[sel]||[]);s.has(h.id)?s.delete(h.id):s.add(h.id);
+      log[sel]=[...s];save();render();
+    };
+    el.onclick=e=>{if(e.target.closest(".del"))return;document.body.classList.contains("edit")?openDlg(h):toggle()};
+    el.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();toggle()}};
+    el.querySelector(".del").onclick=()=>{
+      if(confirm("Delete \""+h.name+"\"?")){habits=habits.filter(x=>x.id!==h.id);save();render()}
+    };
+    l.appendChild(el);
+  });
+}
+function renderTop(){
+  const isToday=sel===todayKey();
+  document.getElementById("title").textContent=isToday?"Today":"Selected day";
+  const d=new Date(sel+"T12:00:00");
+  document.getElementById("sub").textContent=d.toLocaleDateString("en-US",{weekday:"long",day:"numeric",month:"long"});
+  const n=doneSet(sel).filter(id=>habits.some(h=>h.id===id)).length;
+  document.getElementById("count").textContent=fa.format(n)+" of "+fa.format(habits.length);
+  document.getElementById("bar").style.width=(habits.length?n/habits.length*100:0)+"%";
+}
+function render(){renderTop();renderWeek();renderList()}
+
+const dlg=document.getElementById("dlg");
+function buildEmo(){
+  const e=document.getElementById("emo");e.innerHTML="";
+  EMO.forEach(x=>{const b=document.createElement("button");b.textContent=x;b.className=x===pickedEmo?"sel":"";
+    b.onclick=()=>{pickedEmo=x;document.getElementById("ce").value="";buildEmo()};e.appendChild(b)});
+}
+function openDlg(h){
+  editingId=h?h.id:null;
+  document.getElementById("dtitle").textContent=h?"Edit habit":"New habit";
+  document.getElementById("nm").value=h?h.name:"";
+  pickedEmo=h?h.ic:EMO[0];
+  document.getElementById("ce").value=EMO.includes(pickedEmo)?"":pickedEmo;
+  buildEmo();dlg.showModal();document.getElementById("nm").focus();
+}
+document.getElementById("addBtn").onclick=()=>openDlg(null);
+document.getElementById("cancel").onclick=()=>dlg.close();
+document.getElementById("save").onclick=()=>{
+  const v=document.getElementById("nm").value.trim();if(!v)return;
+  const c=document.getElementById("ce").value.trim();
+  let ic=pickedEmo;
+  if(c){ic=[...new Intl.Segmenter(undefined,{granularity:"grapheme"}).segment(c)].map(s=>s.segment)[0]}
+  if(editingId){const h=habits.find(x=>x.id===editingId);if(h){h.name=v;h.ic=ic}}
+  else habits.push({id:Date.now(),name:v,ic:ic});
+  save();dlg.close();render();
+};
+document.getElementById("nm").onkeydown=e=>{if(e.key==="Enter")document.getElementById("save").click()};
+document.getElementById("editBtn").onclick=function(){
+  document.body.classList.toggle("edit");this.textContent=document.body.classList.contains("edit")?"Done":"Edit";
+};
+render();
+</script>
+</body>
+</html>
